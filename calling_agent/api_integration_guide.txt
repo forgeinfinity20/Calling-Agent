@@ -1,0 +1,7 @@
+To connect the Calling Agent with an external calling API:
+
+1. Use your API provider’s SDK (e.g., Twilio REST API).
+2. Authenticate using API key and secret.
+3. Define endpoints for initiating and ending calls.
+4. Integrate agent responses to trigger these endpoints.
+5. Use logs and metadata to update call_logs.txt dynamically.

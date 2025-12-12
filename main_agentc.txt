@@ -1,0 +1,253 @@
+# # main_agent.py — skeleton (adapt imports for your versions)
+
+# from dotenv import load_dotenv
+# load_dotenv()
+# import os
+# from typing import TypedDict, Optional
+
+# # --- env / tracing ---
+# os.environ["LANGCHAIN_TRACING_V2"] = "true"
+# # Ensure your keys are set in environment (no hardcoded secrets)
+# # OPENAI_API_KEY, LANGSMITH_API_KEY
+
+# # --- LangSmith client (tracing) ---
+# from langsmith import Client
+# from langsmith.wrappers import wrap_openai
+# from langsmith import traceable
+
+# client = Client()
+
+# # --- Model wrapper: use ChatOpenAI or LiteLLM as your single call surface ---
+# from langchain_openai import ChatOpenAI  # or your installed path
+# llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+# # Optionally wrap with LangSmith for tracing
+# traced_llm = wrap_openai(llm)
+
+
+# # --- LlamaIndex (RAG) setup ---
+# from llama_index import SimpleDirectoryReader, ServiceContext, VectorStoreIndex, LLMPredictor
+# from langchain import HumanMessage
+
+# documents = SimpleDirectoryReader("calling_agent").load_data()
+# llm_predictor = LLMPredictor(llm=llm)   # adapt to your llama_index version
+# service_context = ServiceContext.from_defaults(llm=llm_predictor)
+# index = VectorStoreIndex.from_documents(documents, service_context=service_context)
+# retriever = index.as_retriever()
+
+# # --- LangChain tools (wrap retriever and call helpers) ---
+# from langchain.tools import Tool
+# def place_call(contact: str) -> str:
+#     # integrate with telephony here
+#     return f"Simulated placing call to {contact}"
+
+# def summarize_call(notes: str) -> str:
+#     return f"SUMMARY: {notes[:200]}"
+
+# def customer_lookup(name: str) -> str:
+#     # use retriever/query_engine instead of fake
+#     results = retriever.get_relevant_documents(name)  # adapt to your retriever API
+#     return results[0].get_text() if results else "No data"
+
+# tools = [
+#     Tool(name="place_call", func=place_call, description="Place a phone call"),
+#     Tool(name="summarize_call", func=summarize_call, description="Summarize notes"),
+#     Tool(name="customer_lookup", func=customer_lookup, description="Lookup customer info")
+# ]
+
+# # --- LangChain agent executor (create executor that will call the tools) ---
+# from langchain.agents import initialize_agent, AgentType
+# from langchain import ConversationBufferMemory
+
+# memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+# agent = initialize_agent(
+#     tools,
+#     traced_llm,
+#     agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+#     memory=memory,
+#     verbose=True
+# )
+
+# # --- LangGraph orchestration (clean node names + state) ---
+# from langgraph.graph import StateGraph, START, END
+
+# class AgentState(TypedDict):
+#     input: str
+#     contact: str
+#     context: Optional[str]
+#     result: Optional[str]
+
+# def node_lookup(state: AgentState):
+#     contact = state["contact"]
+#     # call agent to run tool via a prompt that triggers the tool
+#     out = agent.run(f"Use customer_lookup on '{contact}' and return a short summary.")
+#     state["result"] = out
+#     return state
+
+# def node_call(state: AgentState):
+#     contact = state["contact"]
+#     out = agent.run(f"Use place_call on '{contact}' and return status.")
+#     state["result"] = out
+#     return state
+
+# def node_summarize(state: AgentState):
+#     notes = "Customer agreed to upgrade"  # or pass actual notes
+#     out = agent.run(f"Use summarize_call on '{notes}' and return a short summary.")
+#     state["result"] = out
+#     return state
+
+# graph = StateGraph(AgentState)
+# graph.add_node("lookup", node_lookup)
+# graph.add_node("call", node_call)
+# graph.add_node("summarize", node_summarize)
+# graph.add_edge(START, "lookup")
+# graph.add_edge("lookup", "call")
+# graph.add_edge("call", "summarize")
+# graph.add_edge("summarize", END)
+
+# compiled = graph.compile()
+
+# initial_state = {"input": "Call the customer", "contact": "Alice Doe", "context": None, "result": None}
+# final_state = compiled.invoke(initial_state)
+# print("Final state:", final_state)
+# main_agent.py — fully cleaned, no version conflicts
+------------------------------------------------------------------------------------------------------------------------------------------------------
+from dotenv import load_dotenv
+load_dotenv()
+import os
+from typing import TypedDict, Optional
+
+# --- Environment / Tracing ---
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+# .env file must contain: OPENAI_API_KEY and LANGSMITH_API_KEY
+
+# --- LangSmith setup ---
+from langsmith import Client
+client = Client()
+
+# --- LLM setup ---
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+
+# --- LlamaIndex (RAG) setup ---
+from llama_index.core import SimpleDirectoryReader, ServiceContext, VectorStoreIndex
+from llama_index.llms.openai import OpenAI
+from llama_index.llms import LLMPredictor
+
+documents = SimpleDirectoryReader("calling_agent").load_data()
+llm_predictor = LLMPredictor(llm=llm)
+service_context = ServiceContext.from_defaults(llm=llm_predictor)
+index = VectorStoreIndex.from_documents(documents, service_context=service_context)
+retriever = index.as_retriever()
+
+# --- LangChain Tools ---
+from langchain.tools import Tool
+
+def place_call(contact: str) -> str:
+    # Integrate with real telephony APIs here
+    return f"Simulated placing call to {contact}"
+
+def summarize_call(notes: str) -> str:
+    return f"SUMMARY: {notes[:200]}"
+
+def customer_lookup(name: str) -> str:
+    results = retriever.retrieve(name)
+    if not results:
+        return "No data found for this contact."
+    return results[0].text
+
+tools = [
+    Tool(name="place_call", func=place_call, description="Place a phone call to a contact."),
+    Tool(name="summarize_call", func=summarize_call, description="Summarize call notes."),
+    Tool(name="customer_lookup", func=customer_lookup, description="Retrieve customer information."),
+]
+
+# --- LangChain Agent ---
+from langchain.agents import initialize_agent, AgentType
+from langchain import ConversationBufferMemory
+
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    agent_type=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+    memory=memory,
+    verbose=True
+)
+
+# --- LangGraph Orchestration ---
+from langgraph.graph import StateGraph, START, END
+
+class AgentState(TypedDict):
+    input: str
+    contact: str
+    context: Optional[str]
+    result: Optional[str]
+
+def node_lookup(state: AgentState):
+    contact = state["contact"]
+    out = agent.run(f"Retrieve info for '{contact}' using the customer_lookup tool.")
+    state["result"] = out
+    return state
+
+def node_call(state: AgentState):
+    contact = state["contact"]
+    out = agent.run(f"Use the place_call tool to call {contact}.")
+    state["result"] = out
+    return state
+
+def node_summarize(state: AgentState):
+    notes = "Customer agreed to upgrade."
+    out = agent.run(f"Summarize this note using summarize_call tool: {notes}")
+    state["result"] = out
+    return state
+
+graph = StateGraph(AgentState)
+graph.add_node("lookup", node_lookup)
+graph.add_node("call", node_call)
+graph.add_node("summarize", node_summarize)
+
+graph.add_edge(START, "lookup")
+graph.add_edge("lookup", "call")
+graph.add_edge("call", "summarize")
+graph.add_edge("summarize", END)
+
+compiled = graph.compile()
+
+initial_state = {
+    "input": "Call the customer",
+    "contact": "Alice Doe",
+    "context": None,
+    "result": None,
+}
+
+print("\n🚀 Running AI Calling Agent...\n")
+final_state = compiled.invoke(initial_state)
+print("\n✅ Final state:", final_state)
+
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+from main_agent import compiled, initial_state
+import uvicorn
+
+app = FastAPI()
+
+class CallRequest(BaseModel):
+    contact: str
+    input: str
+
+@app.post("/run")
+def run_agent(req: CallRequest):
+    state = dict(initial_state)
+    state["contact"] = req.contact
+    state["input"] = req.input
+    result = compiled.invoke(state)
+    return {"final_state": result}
+
+@app.get("/")
+def home():
+    return {"status": "AI Calling Agent API is running"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

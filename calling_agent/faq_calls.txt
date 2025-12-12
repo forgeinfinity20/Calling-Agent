@@ -1,0 +1,14 @@
+Q: How do I call someone?
+A: Simply say "Call [name]" or "Dial [number]."
+
+Q: Can you redial the last number?
+A: Yes, I can redial your last outgoing call.
+
+Q: How do I see missed calls?
+A: Ask "Show my missed calls" to list them from the call logs.
+
+Q: How do I schedule a call?
+A: Say "Schedule a call with [name] at [time]" — I’ll note it down or set a reminder.
+
+Q: Can I record calls?
+A: Recording requires permission and depends on your device and local laws.
