@@ -110,7 +110,7 @@
 # final_state = compiled.invoke(initial_state)
 # print("Final state:", final_state)
 # main_agent.py — fully cleaned, no version conflicts
-------------------------------------------------------------------------------------------------------------------------------------------------------
+
 from dotenv import load_dotenv
 load_dotenv()
 import os
@@ -224,50 +224,3 @@ initial_state = {
 print("\n🚀 Running AI Calling Agent...\n")
 final_state = compiled.invoke(initial_state)
 print("\n✅ Final state:", final_state)
-
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-from main_agent import compiled, initial_state
-import uvicorn
-
-app = FastAPI()
-
-from fastapi.middleware.cors import CORSMiddleware
-
-# Get the URL of your portfolio website (the one built by Lovable)
-# Replace 'YOUR_PORTFOLIO_DOMAIN_HERE' with the actual domain.
-# Example: 'https://wasifkazim.com' or 'https://my-portfolio-site.vercel.app'
-# Use '*' for now if you don't know the final URL yet, but this is less secure.
-
-origins = [
-    "YOUR_PORTFOLIO_DOMAIN_HERE",
-    "https://calling-agent-ruddy.vercel.app" # Always allow itself
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # Only allows requests from domains in the 'origins' list
-    allow_credentials=True,
-    allow_methods=["*"],    # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allows all headers
-)
-
-class CallRequest(BaseModel):
-    contact: str
-    input: str
-
-@app.post("/run")
-def run_agent(req: CallRequest):
-    state = dict(initial_state)
-    state["contact"] = req.contact
-    state["input"] = req.input
-    result = compiled.invoke(state)
-    return {"final_state": result}
-
-@app.get("/")
-def home():
-    return {"status": "AI Calling Agent API is running"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)

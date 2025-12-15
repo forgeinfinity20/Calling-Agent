@@ -233,6 +233,26 @@ import uvicorn
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+# Get the URL of your portfolio website (the one built by Lovable)
+# Replace 'YOUR_PORTFOLIO_DOMAIN_HERE' with the actual domain.
+# Example: 'https://wasifkazim.com' or 'https://my-portfolio-site.vercel.app'
+# Use '*' for now if you don't know the final URL yet, but this is less secure.
+
+origins = [
+    "YOUR_PORTFOLIO_DOMAIN_HERE",
+    "https://calling-agent-ruddy.vercel.app" # Always allow itself
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Only allows requests from domains in the 'origins' list
+    allow_credentials=True,
+    allow_methods=["*"],    # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],    # Allows all headers
+)
+
 class CallRequest(BaseModel):
     contact: str
     input: str
